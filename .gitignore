@@ -3,7 +3,6 @@ venv/
 .venv/
 __pycache__/
 *.pyc
-.gradle/
 build/
 dist/
 out*/
@@ -48,4 +47,4 @@ keystore-info.txt
 *password*
 cftoken.txt
 cloudflared
-/android/app/build.gradle.kts
+.gradle/
