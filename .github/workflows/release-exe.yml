@@ -1,0 +1,29 @@
+name: Release EXE
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*', 'build-*']
+permissions:
+  contents: write
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - name: Publish single-file exe
+        shell: bash
+        run: |
+          dotnet publish "windows/Peredatchik/Peredatchik.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out
+          ls -la out
+          EXE=$(ls out/*.exe | head -1)
+          cp "$EXE" "Peredatchik.exe"
+          (cd out && 7z a -tzip "../Peredatchik-portable-win-x64.zip" . > /dev/null)
+      - name: Publish release
+        shell: bash
+        env: { GH_TOKEN: ${{ github.token }} }
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          if [ "$GITHUB_REF_TYPE" != tag ]; then TAG="build-$(date -u +%Y%m%d)-${GITHUB_RUN_NUMBER}"; fi
+          gh release create "$TAG" "Peredatchik.exe" "Peredatchik-portable-win-x64.zip" --target "$GITHUB_SHA" --title "Peredatchik $TAG" --notes "Автосборка для Windows x64 (самодостаточный exe, .NET встроен) из $GITHUB_SHA" || gh release upload "$TAG" "Peredatchik.exe" "Peredatchik-portable-win-x64.zip" --clobber
